@@ -33,6 +33,38 @@ produce the Windows executables and installer.
   currently used version in a given branch.
 
 ---
+Release 5.10.2
+===
+This release contains updated dependencies, a few minor enhancements to some supporting files, 
+and some resorted resources as well as a new image for some of the built EXEs.
+
+We now sign our code! This does mean that built EXEs are now slightly modified on our developer's machines.
+For information on what this means, and opt-out options, please visit https://github.com/EDCD/EDMarketConnector/wiki/Code-Signing-and-EDMC
+
+Note to plugin developers: modules.p and ships.p are deprecated, and slated
+for removal in the next major release! Please look for that change coming soon. 
+
+Note to plugin developers: The `openurl()` function in ttkHyperlinkLabel has been deprecated,
+and slated for removal in the next major release! Please migrate to `webbrowser.open()`.
+
+**Changes and Enhancements**
+* Updated several dependencies
+* Updated FDEV ID's
+* Moved a few unused files to the resources folder. These files have no references in the code
+* Updated relevant copyright dates
+* Added additional logging to the build system
+
+**Bug Fixes**
+* Fixed a printing issue for the localization system for unused strings
+
+**Removed Files**
+* Removed two unused manifest and MacOS icon files which are no longer in use.
+
+**Known Issues**
+* Some users of TCE have reported issues with EDMC 5.10.1 and 5.9.5 with TCE. 
+  * We have been unable to replicate this issue. If you are able to assist, please 
+  add your information here: https://github.com/EDCD/EDMarketConnector/issues/2176
+
 Release 5.10.1
 ===
 This release contains a number of bugfixes, minor performance enhancements,
