@@ -72,4 +72,4 @@ jobs:
 
     - name: translation checks
       run: |
-          ./scripts/find_localised_strings.py --compare-lang L10n/en.template --directory . --ignore coriolis-data
+          python ./scripts/find_localised_strings.py --compare-lang L10n/en.template --directory . --ignore coriolis-data
