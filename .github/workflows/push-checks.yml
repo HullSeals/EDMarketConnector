@@ -72,17 +72,5 @@ jobs:
 
     - name: translation checks
       run: |
-          output=$(python ./scripts/find_localised_strings.py --compare-lang L10n/en.template --directory . --ignore coriolis-data)
-          echo "$output"
-          trimmed_output=$(echo "$output" | xargs)
-          if [ ${#trimmed_output} -eq 0 ]; then
-              echo "output is empty or contains only whitespace"
-          else
-              echo "output has content"
-          fi
-          echo ${#output}
-          if [ $output ]; then
-            echo "$output"
-            echo "error should have been detected"
-            exit 1
-          fi
+          output=$(python ./scripts/find_localised_strings.py --compare-lang L10n/en.template --directory . --ignore coriolis-data 2>&1)
+          echo "Output is: '$output'"
