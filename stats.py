@@ -57,7 +57,7 @@ def status(data: dict[str, Any]) -> list[list[str]]:
     """
     # StatsResults assumes these three things are first
     res = [
-        [tr.tl('Cmdr'),    data['commander']['name']],                 # LANG: Cmdr stats
+        [tr.tl('Cmdr'),    data['commander']['name']],
         [tr.tl('Balance'), str(data['commander'].get('credits', 0))],  # LANG: Cmdr stats
         [tr.tl('Loan'),    str(data['commander'].get('debt', 0))],     # LANG: Cmdr stats
     ]
