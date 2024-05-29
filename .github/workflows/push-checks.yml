@@ -76,6 +76,7 @@ jobs:
           echo "$output"
           echo ${#output}
           if [ -n "$output" ]; then
-            cat "$output"
+            echo "$output"
+            echo "error should have been detected"
             exit 1
           fi
