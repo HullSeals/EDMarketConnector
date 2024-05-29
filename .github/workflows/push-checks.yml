@@ -74,6 +74,7 @@ jobs:
       run: |
           output=$(python ./scripts/find_localised_strings.py --compare-lang L10n/en.template --directory . --ignore coriolis-data)
           echo "$output" > output.txt
+          echo ${#output}
           if [ -s output.txt ]; then
             cat output.txt
             exit 1
