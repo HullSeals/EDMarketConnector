@@ -74,12 +74,12 @@ jobs:
       run: |
           output=$(python ./scripts/find_localised_strings.py --compare-lang L10n/en.template --directory . --ignore coriolis-data)
           echo "$output"
-        trimmed_output=$(echo "$output" | xargs)
-        if [ ${#trimmed_output} -eq 0 ]; then
-            echo "output is empty or contains only whitespace"
-        else
-            echo "output has content"
-        fi
+          trimmed_output=$(echo "$output" | xargs)
+          if [ ${#trimmed_output} -eq 0 ]; then
+              echo "output is empty or contains only whitespace"
+          else
+              echo "output has content"
+          fi
           echo ${#output}
           if [ $output ]; then
             echo "$output"
