@@ -75,7 +75,7 @@ jobs:
           output=$(python ./scripts/find_localised_strings.py --compare-lang L10n/en.template --directory . --ignore coriolis-data)
           echo "$output"
           echo ${#output}
-          if [ -n "$output" ]; then
+          if [ "${#str}" -gt 0 ]; then
             echo "$output"
             echo "error should have been detected"
             exit 1
