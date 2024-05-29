@@ -73,9 +73,9 @@ jobs:
     - name: translation checks
       run: |
           output=$(python ./scripts/find_localised_strings.py --compare-lang L10n/en.template --directory . --ignore coriolis-data)
-          echo "$output" > output.txt
+          echo "$output"
           echo ${#output}
-          if [ -s output.txt ]; then
-            cat output.txt
+          if [ -z "$output" ]; then
+            cat "$output"
             exit 1
           fi
