@@ -311,7 +311,6 @@ def main():
     if args.compare_lang:
         seen = set()
         template = parse_template(args.compare_lang)
-
         for file, calls in res.items():
             for c in calls:
                 arg = get_arg(c)
@@ -338,7 +337,6 @@ def main():
             for path, calls in res.items()
             for c in calls
         ]
-
         output.append(json.dumps(to_print_data, indent=2))
 
     elif args.lang:
@@ -353,7 +351,6 @@ def main():
         for path, calls in res.items():
             if not calls:
                 continue
-
             output.append(str(path))
             for c in calls:
                 output.append(
@@ -364,8 +361,11 @@ def main():
     # Print all collected output at the end
     if output:
         print("\n".join(output))
-        exit(1)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        sys.exit()
