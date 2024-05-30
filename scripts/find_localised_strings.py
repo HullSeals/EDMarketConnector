@@ -64,9 +64,9 @@ COMMENT_SAME_LINE_RE = re.compile(r"^.*?(#.*)$")
 COMMENT_OWN_LINE_RE = re.compile(r"^\s*?(#.*)$")
 
 
-def extract_comments(
+def extract_comments(  # noqa: CCR001
     call: ast.Call, lines: list[str], file: pathlib.Path
-) -> str | None:  # noqa: CCR001
+) -> str | None:
     """
     Extract comments from source code based on the given call.
 
@@ -284,8 +284,8 @@ def generate_lang_template(data: dict[pathlib.Path, list[ast.Call]]) -> str:
     return out
 
 
-def main():
-    """Run the Translation Checker"""
+def main():  # noqa: CCR001
+    """Run the Translation Checker."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--directory", help="Directory to search from", default=".")
     parser.add_argument(
