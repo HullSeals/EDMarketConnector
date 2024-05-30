@@ -6,6 +6,7 @@
 
 /* inara.py:Text Inara Show API key; In files: inara.py:305; */
 "Show API Key" = "Show API Key";
+
 /* Language name */
 "!Language" = "English";
 
@@ -801,8 +802,6 @@
 /* prefs.py: Select the Update Track (Beta, Stable); */
 "Update Track" = "Update Track";
 
-/* EDMarketConnector.py: Inform the user the Update Track has changed; */
-"Update Track Changed to {TRACK}" = "Update Track Changed to {TRACK}";
 
 
 /* EDMarketConnector.py: Inform User of Beta -> Stable Transition Risks; */
