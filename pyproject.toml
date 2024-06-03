@@ -6,6 +6,7 @@ max_line_length = 120
 testpaths = ["tests"] # Search for tests in tests/
 addopts = "--cov . --cov plugins --cov-report=term-missing --no-cov-on-fail"
 # --cov-fail-under 80"
+pythonpath = ["."]
 
 [tool.coverage.run]
 omit = [ "tests/*", "venv/*", ".venv/*", "dist.win32/*" ]
