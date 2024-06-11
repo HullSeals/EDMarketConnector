@@ -7,23 +7,73 @@ See LICENSE file.
 """
 from __future__ import annotations
 
-import os
+import pathlib
+import shutil
 import sys
 import threading
-from os.path import dirname, join
 from traceback import print_exc
 from typing import TYPE_CHECKING
 from xml.etree import ElementTree
 import requests
 import semantic_version
-from config import appname, appversion_nobuild, config, update_feed
+from config import appname, appversion_nobuild, config, get_update_feed
 from EDMCLogging import get_main_logger
+from l10n import translations as tr
 
 if TYPE_CHECKING:
     import tkinter as tk
 
 
 logger = get_main_logger()
+
+
+def check_for_fdev_updates(silent: bool = False, local: bool = False) -> None:  # noqa: CCR001
+    """Check for and download FDEV ID file updates."""
+    if local:
+        pathway = config.respath_path
+    else:
+        pathway = config.app_dir_path
+
+    files_urls = [
+        ('commodity.csv', 'https://raw.githubusercontent.com/EDCD/FDevIDs/master/commodity.csv'),
+        ('rare_commodity.csv', 'https://raw.githubusercontent.com/EDCD/FDevIDs/master/rare_commodity.csv')
+    ]
+
+    for file, url in files_urls:
+        fdevid_file = pathlib.Path(pathway / 'FDevIDs' / file)
+        fdevid_file.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            with open(fdevid_file, newline='', encoding='utf-8') as f:
+                local_content = f.read()
+        except FileNotFoundError:
+            logger.info(f'File {file} not found. Writing from bundle...')
+            try:
+                for localfile in files_urls:
+                    filepath = pathlib.Path(f"FDevIDs/{localfile[0]}")
+                    try:
+                        shutil.copy(filepath, pathway / 'FDevIDs')
+                    except shutil.SameFileError:
+                        logger.info("Not replacing same file...")
+                    fdevid_file = pathlib.Path(pathway / 'FDevIDs' / file)
+                    with open(fdevid_file, newline='', encoding='utf-8') as f:
+                        local_content = f.read()
+            except FileNotFoundError:
+                local_content = None
+
+        response = requests.get(url, timeout=20)
+        if response.status_code != 200:
+            if not silent:
+                logger.error(f'Failed to download {file}! Unable to continue.')
+            continue
+
+        if local_content == response.text:
+            if not silent:
+                logger.info(f'FDEV ID file {file} already up to date.')
+        else:
+            if not silent:
+                logger.info(f'FDEV ID file {file} not up to date. Downloading...')
+            with open(fdevid_file, 'w', newline='', encoding='utf-8') as csvfile:
+                csvfile.write(response.text)
 
 
 class EDMCVersion:
@@ -91,7 +141,7 @@ class Updater:
                 self.updater: ctypes.CDLL | None = ctypes.cdll.WinSparkle
 
                 # Set the appcast URL
-                self.updater.win_sparkle_set_appcast_url(update_feed.encode())
+                self.updater.win_sparkle_set_appcast_url(get_update_feed().encode())
 
                 # Set the appversion *without* build metadata, as WinSparkle
                 # doesn't do proper Semantic Version checks.
@@ -114,21 +164,6 @@ class Updater:
 
             return
 
-        if sys.platform == 'darwin':
-            import objc
-
-            try:
-                objc.loadBundle(
-                    'Sparkle', globals(), join(dirname(sys.executable), os.pardir, 'Frameworks', 'Sparkle.framework')
-                )
-                # loadBundle presumably supplies `SUUpdater`
-                self.updater = SUUpdater.sharedUpdater()  # noqa: F821
-
-            except Exception:
-                # can't load framework - not frozen or not included in app bundle?
-                print_exc()
-                self.updater = None
-
     def set_automatic_updates_check(self, onoroff: bool) -> None:
         """
         Set (Win)Sparkle to perform automatic update checks, or not.
@@ -141,9 +176,6 @@ class Updater:
         if sys.platform == 'win32' and self.updater:
             self.updater.win_sparkle_set_automatic_check_for_updates(onoroff)
 
-        if sys.platform == 'darwin' and self.updater:
-            self.updater.SUEnableAutomaticChecks(onoroff)
-
     def check_for_updates(self) -> None:
         """Trigger the requisite method to check for an update."""
         if self.use_internal():
@@ -154,12 +186,18 @@ class Updater:
         elif sys.platform == 'win32' and self.updater:
             self.updater.win_sparkle_check_update_with_ui()
 
-        elif sys.platform == 'darwin' and self.updater:
-            self.updater.checkForUpdates_(None)
+        check_for_fdev_updates()
+        # TEMP: Only include until 6.0
+        try:
+            check_for_fdev_updates(local=True)
+        except Exception as e:
+            logger.info("Tried to update bundle FDEV files but failed. Don't worry, "
+                        "this likely isn't important and can be ignored unless"
+                        f" you run into other issues. If you're curious: {e}")
 
     def check_appcast(self) -> EDMCVersion | None:
         """
-        Manually (no Sparkle or WinSparkle) check the update_feed appcast file.
+        Manually (no Sparkle or WinSparkle) check the get_update_feed() appcast file.
 
         Checks if any listed version is semantically greater than the current
         running version.
@@ -168,7 +206,7 @@ class Updater:
         newversion = None
         items = {}
         try:
-            request = requests.get(update_feed, timeout=10)
+            request = requests.get(get_update_feed(), timeout=10)
 
         except requests.RequestException as ex:
             logger.exception(f'Error retrieving update_feed file: {ex}')
@@ -183,13 +221,9 @@ class Updater:
 
             return None
 
-        if sys.platform == 'darwin':
-            sparkle_platform = 'macos'
-
-        else:
-            # For *these* purposes anything else is the same as 'windows', as
-            # non-win32 would be running from source.
-            sparkle_platform = 'windows'
+        # For *these* purposes all systems are the same as 'windows', as
+        # non-win32 would be running from source.
+        sparkle_platform = 'windows'
 
         for item in feed.findall('channel/item'):
             # xml is a pain with types, hence these ignores
@@ -225,7 +259,8 @@ class Updater:
 
         if newversion and self.root:
             status = self.root.nametowidget(f'.{appname.lower()}.status')
-            status['text'] = newversion.title + ' is available'
+            # LANG: Update Available Text
+            status['text'] = tr.tl("{NEWVER} is available").format(NEWVER=newversion.title)
             self.root.update_idletasks()
 
         else:
