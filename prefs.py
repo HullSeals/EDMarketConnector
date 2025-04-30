@@ -201,14 +201,11 @@ if sys.platform == 'win32':
 
     def get_localized_path(path: str, config_home: str) -> str:
         """
-        Get the localized display path for a Windows file system path.
-        Shows only drive letters without labels.
+        Get the localized display path for a Windows file system path. Shows only drive letters without labels.
 
-        Args:
-            path: The path to localize
-            config_home: The home directory path
-        Returns:
-            Localized path as string
+        :param path: The path to localize
+        :param config_home: The home directory path
+        :return Localized path as string
         """
         if not path:
             return path
@@ -471,7 +468,7 @@ class PreferencesDialog(tk.Toplevel):
         # CAPI settings
         self.capi_fleetcarrier = tk.BooleanVar(value=config.get_bool('capi_fleetcarrier'))
 
-        ttk.Separator(config_frame, orient=tk.HORIZONTAL).grid(
+        ttk.Separator(config_frame, orient='horizontal').grid(
                 columnspan=4, padx=self.PADX, pady=self.SEPY, sticky=tk.EW, row=row.get()
             )
 
@@ -488,7 +485,7 @@ class PreferencesDialog(tk.Toplevel):
             ).grid(columnspan=4, padx=self.BUTTONX, pady=self.PADY, sticky=tk.W, row=row.get())
 
         if sys.platform == 'win32':
-            ttk.Separator(config_frame, orient=tk.HORIZONTAL).grid(
+            ttk.Separator(config_frame, orient='horizontal').grid(
                 columnspan=4, padx=self.PADX, pady=self.SEPY, sticky=tk.EW, row=row.get()
             )
 
@@ -502,7 +499,7 @@ class PreferencesDialog(tk.Toplevel):
                     text=tr.tl('Hotkey')  # LANG: Hotkey/Shortcut settings prompt on Windows
                 ).grid(padx=self.PADX, pady=self.PADY, sticky=tk.W, row=cur_row)
 
-                self.hotkey_text = ttk.Entry(config_frame, width=30, justify=tk.CENTER)
+                self.hotkey_text = ttk.Entry(config_frame, width=30, justify='center')
                 self.hotkey_text.insert(
                     0,
                     # No hotkey/shortcut currently defined
@@ -538,7 +535,7 @@ class PreferencesDialog(tk.Toplevel):
                 self.hotkey_play_btn.grid(columnspan=4, padx=self.BUTTONX, pady=self.PADY, sticky=tk.W, row=row.get())
 
         # Options to select the Update Path and Disable Automatic Checks For Updates whilst in-game
-        ttk.Separator(config_frame, orient=tk.HORIZONTAL).grid(
+        ttk.Separator(config_frame, orient='horizontal').grid(
             columnspan=4, padx=self.PADX, pady=self.SEPY, sticky=tk.EW, row=row.get()
         )
 
@@ -573,7 +570,7 @@ class PreferencesDialog(tk.Toplevel):
             columnspan=4, padx=self.BUTTONX, pady=self.PADY, sticky=tk.W, row=row.get()
         )
 
-        ttk.Separator(config_frame, orient=tk.HORIZONTAL).grid(
+        ttk.Separator(config_frame, orient='horizontal').grid(
             columnspan=4, padx=self.PADX, pady=self.SEPY, sticky=tk.EW, row=row.get()
         )
 
@@ -648,7 +645,7 @@ class PreferencesDialog(tk.Toplevel):
             self.station_button.grid(column=1, pady=self.BOXY, sticky=tk.W, row=cur_row)
 
         # Set loglevel
-        ttk.Separator(config_frame, orient=tk.HORIZONTAL).grid(
+        ttk.Separator(config_frame, orient='horizontal').grid(
             columnspan=4, padx=self.PADX, pady=self.SEPY, sticky=tk.EW, row=row.get()
         )
 
@@ -747,7 +744,7 @@ class PreferencesDialog(tk.Toplevel):
             self.lang_button = nb.OptionMenu(appearance_frame, self.lang, self.lang.get(), *self.languages.values())
             self.lang_button.grid(column=1, columnspan=2, padx=0, pady=self.BOXY, sticky=tk.W, row=cur_row)
 
-        ttk.Separator(appearance_frame, orient=tk.HORIZONTAL).grid(
+        ttk.Separator(appearance_frame, orient='horizontal').grid(
             columnspan=4, padx=self.PADX, pady=self.SEPY, sticky=tk.EW, row=row.get()
         )
 
@@ -816,7 +813,7 @@ class PreferencesDialog(tk.Toplevel):
         So, if at startup we find tk-scaling is 1.33 and have a user setting
         of 200 we'll end up setting 2.66 as the tk-scaling value.
         """
-        ttk.Separator(appearance_frame, orient=tk.HORIZONTAL).grid(
+        ttk.Separator(appearance_frame, orient='horizontal').grid(
             columnspan=4, padx=self.PADX, pady=self.SEPY, sticky=tk.EW, row=row.get()
         )
         with row as cur_row:
@@ -830,7 +827,7 @@ class PreferencesDialog(tk.Toplevel):
             self.uiscale_bar = tk.Scale(
                 appearance_frame,
                 variable=self.ui_scale,  # type: ignore # TODO: intvar, but annotated as DoubleVar
-                orient=tk.HORIZONTAL,
+                orient='horizontal',
                 length=300 * (float(theme.startup_ui_scale) / 100.0 * theme.default_ui_scale),  # type: ignore # runtime
                 from_=0,
                 to=400,
@@ -847,7 +844,7 @@ class PreferencesDialog(tk.Toplevel):
             self.ui_scaling_defaultis.grid(column=3, padx=self.PADX, pady=self.PADY, sticky=tk.E, row=cur_row)
 
         # Transparency slider
-        ttk.Separator(appearance_frame, orient=tk.HORIZONTAL).grid(
+        ttk.Separator(appearance_frame, orient='horizontal').grid(
             columnspan=4, padx=self.PADX, pady=self.SEPY, sticky=tk.EW, row=row.get()
         )
 
@@ -861,7 +858,7 @@ class PreferencesDialog(tk.Toplevel):
             self.transparency_bar = tk.Scale(
                 appearance_frame,
                 variable=self.transparency,  # type: ignore # Its accepted as an intvar
-                orient=tk.HORIZONTAL,
+                orient='horizontal',
                 length=300 * (float(theme.startup_ui_scale) / 100.0 * theme.default_ui_scale),  # type: ignore # runtime
                 from_=100,
                 to=5,
@@ -888,7 +885,7 @@ class PreferencesDialog(tk.Toplevel):
             self.transparency_bar.grid(column=1, padx=0, pady=self.BOXY, sticky=tk.W, row=cur_row)
 
         # Always on top
-        ttk.Separator(appearance_frame, orient=tk.HORIZONTAL).grid(
+        ttk.Separator(appearance_frame, orient='horizontal').grid(
             columnspan=4, padx=self.PADX, pady=self.SEPY, sticky=tk.EW, row=row.get()
         )
 
@@ -979,7 +976,7 @@ class PreferencesDialog(tk.Toplevel):
 
         enabled_plugins = list(filter(lambda x: x.folder and x.module, plug.PLUGINS))
         if enabled_plugins:
-            ttk.Separator(plugins_frame, orient=tk.HORIZONTAL).grid(
+            ttk.Separator(plugins_frame, orient='horizontal').grid(
                 columnspan=4, padx=self.PADX, pady=self.SEPY, sticky=tk.EW, row=row.get()
             )
             nb.Label(
@@ -999,7 +996,7 @@ class PreferencesDialog(tk.Toplevel):
         # Show which plugins don't have Python 3.x support
         ############################################################
         if plug.PLUGINS_not_py3:
-            ttk.Separator(plugins_frame, orient=tk.HORIZONTAL).grid(
+            ttk.Separator(plugins_frame, orient='horizontal').grid(
                 columnspan=3, padx=self.PADX, pady=self.SEPY, sticky=tk.EW, row=row.get()
             )
             # LANG: Plugins - Label for list of 'enabled' plugins that don't work with Python 3.x
@@ -1025,7 +1022,7 @@ class PreferencesDialog(tk.Toplevel):
         ############################################################
         disabled_plugins = list(filter(lambda x: x.folder and not x.module, plug.PLUGINS))
         if disabled_plugins:
-            ttk.Separator(plugins_frame, orient=tk.HORIZONTAL).grid(
+            ttk.Separator(plugins_frame, orient='horizontal').grid(
                 columnspan=3, padx=self.PADX, pady=self.SEPY, sticky=tk.EW, row=row.get()
             )
             nb.Label(
@@ -1042,7 +1039,7 @@ class PreferencesDialog(tk.Toplevel):
         # Show plugins that failed to load
         ############################################################
         if plug.PLUGINS_broken:
-            ttk.Separator(plugins_frame, orient=tk.HORIZONTAL).grid(
+            ttk.Separator(plugins_frame, orient='horizontal').grid(
                 columnspan=3, padx=self.PADX, pady=self.SEPY, sticky=tk.EW, row=row.get()
             )
             # LANG: Plugins - Label for list of 'broken' plugins that failed to load
@@ -1109,15 +1106,15 @@ class PreferencesDialog(tk.Toplevel):
             pathvar.set(directory)
             self.outvarchanged()
 
-    def displaypath(self, pathvar: tk.StringVar, entryfield: tk.Entry) -> None:
+    def displaypath(self, pathvar: tk.StringVar, entryfield: ttk.Entry) -> None:
         """
-        Display a path in a locked tk.Entry.
+        Display a path in a locked ttk.Entry.
 
         :param pathvar: the path to display
-        :param entryfield: the entry in which to display the path
+        :param entryfield: the ttk.Entry in which to display the path
         """
         # TODO: This is awful.
-        entryfield['state'] = tk.NORMAL  # must be writable to update
+        entryfield['state'] = 'normal'  # must be writable to update
         entryfield.delete(0, tk.END)
         if sys.platform == 'win32':
             localized_path = get_localized_path(pathvar.get(), config.home)

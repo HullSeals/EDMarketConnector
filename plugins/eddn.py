@@ -29,6 +29,7 @@ import pathlib
 import re
 import sqlite3
 import tkinter as tk
+from tkinter import ttk
 from platform import system
 from textwrap import dedent
 from threading import Lock
@@ -113,16 +114,16 @@ class This:
         self.eddn_delay_button: nb.Checkbutton
 
         # Tracking UI
-        self.ui: tk.Frame
-        self.ui_system_name: tk.Label
-        self.ui_system_address: tk.Label
-        self.ui_j_body_name: tk.Label
-        self.ui_j_body_id: tk.Label
-        self.ui_j_body_type: tk.Label
-        self.ui_s_body_name: tk.Label
-        self.ui_station_name: tk.Label
-        self.ui_station_type: tk.Label
-        self.ui_station_marketid: tk.Label
+        self.ui: ttk.Frame
+        self.ui_system_name: ttk.Label
+        self.ui_system_address: ttk.Label
+        self.ui_j_body_name: ttk.Label
+        self.ui_j_body_id: ttk.Label
+        self.ui_j_body_type: ttk.Label
+        self.ui_s_body_name: ttk.Label
+        self.ui_station_name: ttk.Label
+        self.ui_station_type: ttk.Label
+        self.ui_station_marketid: ttk.Label
 
 
 this = This()
@@ -2002,7 +2003,7 @@ def plugin_start3(plugin_dir: str) -> str:
     return 'EDDN'
 
 
-def plugin_app(parent: tk.Tk) -> tk.Frame | None:
+def plugin_app(parent: tk.Tk) -> ttk.Frame | None:
     """
     Set up any plugin-specific UI.
 
@@ -2010,13 +2011,13 @@ def plugin_app(parent: tk.Tk) -> tk.Frame | None:
     `update_idletasks()` on it, or schedule things with `after()`.
 
     :param parent: tkinter parent frame.
-    :return: Optional tk.Frame, if the tracking UI is active.
+    :return: Optional ttk.Frame, if the tracking UI is active.
     """
     this.parent = parent
     this.eddn = EDDN(parent)
 
     if config.eddn_tracking_ui:
-        this.ui = tk.Frame(parent)
+        this.ui = ttk.Frame(parent)
 
         row = this.ui.grid_size()[1]
 
@@ -2024,15 +2025,15 @@ def plugin_app(parent: tk.Tk) -> tk.Frame | None:
         # System
         #######################################################################
         # SystemName
-        system_name_label = tk.Label(this.ui, text="J:SystemName:")
+        system_name_label = ttk.Label(this.ui, text="J:SystemName:")
         system_name_label.grid(row=row, column=0, sticky=tk.W)
-        this.ui_system_name = tk.Label(this.ui, name='eddn_track_system_name', anchor=tk.W)
+        this.ui_system_name = ttk.Label(this.ui, name='eddn_track_system_name', anchor='w')
         this.ui_system_name.grid(row=row, column=1, sticky=tk.E)
         row += 1
         # SystemAddress
-        system_address_label = tk.Label(this.ui, text="J:SystemAddress:")
+        system_address_label = ttk.Label(this.ui, text="J:SystemAddress:")
         system_address_label.grid(row=row, column=0, sticky=tk.W)
-        this.ui_system_address = tk.Label(this.ui, name='eddn_track_system_address', anchor=tk.W)
+        this.ui_system_address = ttk.Label(this.ui, name='eddn_track_system_address', anchor='w')
         this.ui_system_address.grid(row=row, column=1, sticky=tk.E)
         row += 1
         #######################################################################
@@ -2041,27 +2042,27 @@ def plugin_app(parent: tk.Tk) -> tk.Frame | None:
         # Body
         #######################################################################
         # Body Name from Journal
-        journal_body_name_label = tk.Label(this.ui, text="J:BodyName:")
+        journal_body_name_label = ttk.Label(this.ui, text="J:BodyName:")
         journal_body_name_label.grid(row=row, column=0, sticky=tk.W)
-        this.ui_j_body_name = tk.Label(this.ui, name='eddn_track_j_body_name', anchor=tk.W)
+        this.ui_j_body_name = ttk.Label(this.ui, name='eddn_track_j_body_name', anchor='w')
         this.ui_j_body_name.grid(row=row, column=1, sticky=tk.E)
         row += 1
         # Body ID from Journal
-        journal_body_id_label = tk.Label(this.ui, text="J:BodyID:")
+        journal_body_id_label = ttk.Label(this.ui, text="J:BodyID:")
         journal_body_id_label.grid(row=row, column=0, sticky=tk.W)
-        this.ui_j_body_id = tk.Label(this.ui, name='eddn_track_j_body_id', anchor=tk.W)
+        this.ui_j_body_id = ttk.Label(this.ui, name='eddn_track_j_body_id', anchor='w')
         this.ui_j_body_id.grid(row=row, column=1, sticky=tk.E)
         row += 1
         # Body Type from Journal
-        journal_body_type_label = tk.Label(this.ui, text="J:BodyType:")
+        journal_body_type_label = ttk.Label(this.ui, text="J:BodyType:")
         journal_body_type_label.grid(row=row, column=0, sticky=tk.W)
-        this.ui_j_body_type = tk.Label(this.ui, name='eddn_track_j_body_type', anchor=tk.W)
+        this.ui_j_body_type = ttk.Label(this.ui, name='eddn_track_j_body_type', anchor='w')
         this.ui_j_body_type.grid(row=row, column=1, sticky=tk.E)
         row += 1
         # Body Name from Status.json
-        status_body_name_label = tk.Label(this.ui, text="S:BodyName:")
+        status_body_name_label = ttk.Label(this.ui, text="S:BodyName:")
         status_body_name_label.grid(row=row, column=0, sticky=tk.W)
-        this.ui_s_body_name = tk.Label(this.ui, name='eddn_track_s_body_name', anchor=tk.W)
+        this.ui_s_body_name = ttk.Label(this.ui, name='eddn_track_s_body_name', anchor='w')
         this.ui_s_body_name.grid(row=row, column=1, sticky=tk.E)
         row += 1
         #######################################################################
@@ -2070,21 +2071,21 @@ def plugin_app(parent: tk.Tk) -> tk.Frame | None:
         # Station
         #######################################################################
         # Name
-        status_station_name_label = tk.Label(this.ui, text="J:StationName:")
+        status_station_name_label = ttk.Label(this.ui, text="J:StationName:")
         status_station_name_label.grid(row=row, column=0, sticky=tk.W)
-        this.ui_station_name = tk.Label(this.ui, name='eddn_track_station_name', anchor=tk.W)
+        this.ui_station_name = ttk.Label(this.ui, name='eddn_track_station_name', anchor='w')
         this.ui_station_name.grid(row=row, column=1, sticky=tk.E)
         row += 1
         # Type
-        status_station_type_label = tk.Label(this.ui, text="J:StationType:")
+        status_station_type_label = ttk.Label(this.ui, text="J:StationType:")
         status_station_type_label.grid(row=row, column=0, sticky=tk.W)
-        this.ui_station_type = tk.Label(this.ui, name='eddn_track_station_type', anchor=tk.W)
+        this.ui_station_type = ttk.Label(this.ui, name='eddn_track_station_type', anchor='w')
         this.ui_station_type.grid(row=row, column=1, sticky=tk.E)
         row += 1
         # MarketID
-        status_station_marketid_label = tk.Label(this.ui, text="J:StationID:")
+        status_station_marketid_label = ttk.Label(this.ui, text="J:StationID:")
         status_station_marketid_label.grid(row=row, column=0, sticky=tk.W)
-        this.ui_station_marketid = tk.Label(this.ui, name='eddn_track_station_id', anchor=tk.W)
+        this.ui_station_marketid = ttk.Label(this.ui, name='eddn_track_station_id', anchor='w')
         this.ui_station_marketid.grid(row=row, column=1, sticky=tk.E)
         row += 1
         #######################################################################

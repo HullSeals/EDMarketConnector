@@ -194,7 +194,7 @@ class HyperlinkLabel(tk.Label or ttk.Label):  # type: ignore
 
         if self.name == 'ship':
             # LANG: Copy the Inara SLEF Format of the active ship to the clipboard
-            menu.add_command(label=tr.tl('Copy Inara SLEF'), command=self.copy_slef, state=tk.DISABLED)
+            menu.add_command(label=tr.tl('Copy Inara SLEF'), command=self.copy_slef, state='disabled')
             menu.entryconfigure(1, state=monitor.slef and tk.NORMAL or tk.DISABLED)
 
             menu.add_separator()

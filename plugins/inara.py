@@ -113,11 +113,11 @@ class This:
         self.timer_run = True
 
         # Main window clicks
-        self.system_link: tk.Widget = None  # type: ignore
+        self.system_link: ttk.Widget = None  # type: ignore
         self.system_name: str | None = None  # type: ignore
         self.system_address: str | None = None  # type: ignore
         self.system_population: int | None = None
-        self.station_link: tk.Widget = None  # type: ignore
+        self.station_link: ttk.Widget = None  # type: ignore
         self.station_name = None
         self.station_marketid = None
 
@@ -126,7 +126,7 @@ class This:
         self.log_button: nb.Checkbutton
         self.label: HyperlinkLabel
         self.apikey: nb.EntryMenu
-        self.apikey_label: tk.Label
+        self.apikey_label: ttk.Label
 
         self.events: dict[Credentials, Deque[Event]] = defaultdict(deque)
         self.event_lock: Lock = threading.Lock()  # protects events, for use when rewriting events
@@ -256,7 +256,7 @@ def plugin_prefs(parent: ttk.Notebook, cmdr: str, is_beta: bool) -> nb.Frame:
     this.log_button.grid(row=cur_row, columnspan=2, padx=BUTTONX, pady=PADY, sticky=tk.W)
     cur_row += 1
 
-    ttk.Separator(frame, orient=tk.HORIZONTAL).grid(
+    ttk.Separator(frame, orient='horizontal').grid(
         columnspan=2, padx=PADX, pady=SEPY, sticky=tk.EW, row=cur_row
     )
     cur_row += 1

@@ -436,7 +436,7 @@ class StatsResults(tk.Toplevel):
         :param align: The alignment of the page, defaults to None
         """
         self.addpagerow(parent, header, align=align, with_copy=False)
-        ttk.Separator(parent, orient=tk.HORIZONTAL).grid(columnspan=len(header), padx=10, pady=2, sticky=tk.EW)
+        ttk.Separator(parent, orient='horizontal').grid(columnspan=len(header), padx=10, pady=2, sticky=tk.EW)
 
     def addpagespacer(self, parent) -> None:
         """Add a spacer to the page."""

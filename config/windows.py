@@ -12,7 +12,6 @@ import pathlib
 import sys
 import uuid
 import winreg
-from typing import Literal
 from config import AbstractConfig, applongname, appname, logger
 from win32comext.shell import shell
 
@@ -156,12 +155,10 @@ class WinConfig(AbstractConfig):
 
     def set(self, key: str, val: int | str | list[str] | bool) -> None:
         """
-        Set the given key's data to the given value.
+        Set the given key's data to the given value (1, 4, or 7).
 
         Implements :meth:`AbstractConfig.set`.
         """
-        # These are the types that winreg.REG_* below resolve to.
-        reg_type: Literal[1] | Literal[4] | Literal[7]
         if isinstance(val, str):
             reg_type = winreg.REG_SZ
 

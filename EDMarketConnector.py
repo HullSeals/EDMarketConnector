@@ -490,11 +490,11 @@ class AppWindow:
         frame.columnconfigure(1, weight=1)
 
         self.cmdr_label = tk.Label(frame, name='cmdr_label')
-        self.cmdr = tk.Label(frame, compound=tk.RIGHT, anchor=tk.W, name='cmdr')
+        self.cmdr = tk.Label(frame, compound='right', anchor='w', name='cmdr')
         self.ship_label = tk.Label(frame, name='ship_label')
         self.ship = HyperlinkLabel(frame, compound=tk.RIGHT, url=self.shipyard_url, name='ship', popup_copy=True)
         self.suit_label = tk.Label(frame, name='suit_label')
-        self.suit = tk.Label(frame, compound=tk.RIGHT, anchor=tk.W, name='suit')
+        self.suit = tk.Label(frame, compound='right', anchor='w', name='suit')
         self.system_label = tk.Label(frame, name='system_label')
         self.system = HyperlinkLabel(frame, compound=tk.RIGHT, url=self.system_url, popup_copy=True, name='system')
         self.station_label = tk.Label(frame, name='station_label')
@@ -566,14 +566,14 @@ class AppWindow:
             name='update_button',
             text=tr.tl('Update'),  # LANG: Main UI Update button
             width=28,
-            default=tk.ACTIVE,
+            default='active',
             state=tk.DISABLED
         )
         self.theme_button = tk.Label(
             frame,
             name='themed_update_button',
             width=28,
-            state=tk.DISABLED
+            state='disabled'
         )
 
         ui_row = frame.grid_size()[1]
@@ -585,7 +585,7 @@ class AppWindow:
         theme.button_bind(self.theme_button, self.capi_request_data)
 
         # Bottom 'status' line.
-        self.status = tk.Label(frame, name='status', anchor=tk.W)
+        self.status = tk.Label(frame, name='status', anchor='w')
         self.status.grid(columnspan=2, sticky=tk.EW)
 
         for child in frame.winfo_children():
@@ -614,7 +614,7 @@ class AppWindow:
         self.file_menu.add_command(command=self.onexit)
         self.menubar.add_cascade(menu=self.file_menu)
         self.edit_menu = tk.Menu(self.menubar, tearoff=tk.FALSE)
-        self.edit_menu.add_command(accelerator='Ctrl+C', state=tk.DISABLED, command=self.copy)
+        self.edit_menu.add_command(accelerator='Ctrl+C', state='disabled', command=self.copy)
         self.menubar.add_cascade(menu=self.edit_menu)
         self.help_menu = tk.Menu(self.menubar, tearoff=tk.FALSE)  # type: ignore
         self.help_menu.add_command(command=self.help_general)  # Documentation
@@ -659,7 +659,7 @@ class AppWindow:
             name="alternate_titlebar",
             text=applongname,
             image=self.theme_icon, cursor='fleur',
-            anchor=tk.W, compound=tk.LEFT
+            anchor='w', compound='left'
         )
         theme_titlebar.grid(columnspan=3, padx=2, sticky=tk.NSEW)
         self.drag_offset: tuple[int | None, int | None] = (None, None)
@@ -672,19 +672,19 @@ class AppWindow:
         theme_close = tk.Label(self.theme_menubar, image=self.theme_close)
         theme_close.grid(row=0, column=4, padx=2)
         theme.button_bind(theme_close, self.onexit, image=self.theme_close)
-        self.theme_file_menu = tk.Label(self.theme_menubar, anchor=tk.W)
+        self.theme_file_menu = tk.Label(self.theme_menubar, anchor='w')
         self.theme_file_menu.grid(row=1, column=0, padx=self.PADX, sticky=tk.W)
         theme.button_bind(self.theme_file_menu,
                           lambda e: self.file_menu.tk_popup(e.widget.winfo_rootx(),
                                                             e.widget.winfo_rooty()
                                                             + e.widget.winfo_height()))
-        self.theme_edit_menu = tk.Label(self.theme_menubar, anchor=tk.W)
+        self.theme_edit_menu = tk.Label(self.theme_menubar, anchor='w')
         self.theme_edit_menu.grid(row=1, column=1, sticky=tk.W)
         theme.button_bind(self.theme_edit_menu,
                           lambda e: self.edit_menu.tk_popup(e.widget.winfo_rootx(),
                                                             e.widget.winfo_rooty()
                                                             + e.widget.winfo_height()))
-        self.theme_help_menu = tk.Label(self.theme_menubar, anchor=tk.W)
+        self.theme_help_menu = tk.Label(self.theme_menubar, anchor='w')
         self.theme_help_menu.grid(row=1, column=2, sticky=tk.W)
         theme.button_bind(self.theme_help_menu,
                           lambda e: self.help_menu.tk_popup(e.widget.winfo_rootx(),
@@ -696,7 +696,7 @@ class AppWindow:
         self.blank_menubar = tk.Frame(frame, name="blank_menubar")
         tk.Label(self.blank_menubar).grid()
         tk.Label(self.blank_menubar).grid()
-        tk.Frame(self.blank_menubar, height=2).grid()
+        ttk.Frame(self.blank_menubar, height=2).grid()
         theme.register_alternate((self.menubar, self.theme_menubar, self.blank_menubar),
                                  {'row': 0, 'columnspan': 2, 'sticky': tk.NSEW})
         self.w.resizable(tk.TRUE, tk.FALSE)
@@ -1451,10 +1451,10 @@ class AppWindow:
 
                 # Ensure the ship type/name text is clickable, if it should be.
                 if monitor.state['Modules']:
-                    ship_state: Literal['normal', 'disabled'] = tk.NORMAL
+                    ship_state: Literal['normal', 'disabled'] = 'normal'
 
                 else:
-                    ship_state = tk.DISABLED
+                    ship_state = 'disabled'
 
                 self.ship.configure(text=ship_text, url=self.shipyard_url, state=ship_state)
 
@@ -1781,11 +1781,11 @@ class AppWindow:
             # version <link to changelog>
             tk.Label(frame).grid(row=row, column=0)  # spacer
             row += 1
-            self.appversion_label = tk.Text(frame, height=1, width=len(str(appversion())), wrap=tk.NONE, bd=0)
+            self.appversion_label = tk.Text(frame, height=1, width=len(str(appversion())), wrap='none', bd=0)
             self.appversion_label.insert("1.0", str(appversion()))
             self.appversion_label.tag_configure("center", justify="center")
             self.appversion_label.tag_add("center", "1.0", "end")
-            self.appversion_label.config(state=tk.DISABLED, bg=frame.cget("background"), font="TkDefaultFont")
+            self.appversion_label.config(state='disabled', bg=frame.cget("background"), font="TkDefaultFont")
             self.appversion_label.grid(row=row, column=0, sticky=tk.E)
             # LANG: Help > Release Notes
             self.appversion = HyperlinkLabel(frame, compound=tk.RIGHT, text=tr.tl('Release Notes'),

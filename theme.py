@@ -156,9 +156,9 @@ class _Theme:
                 'font': tk.Label()['font'],               # TkDefaultFont
                 'bitmapfg': tk.BitmapImage()['foreground'],   # '-foreground {} {} #000000 #000000'
                 'bitmapbg': tk.BitmapImage()['background'],   # '-background {} {} {} {}'
-                'entryfg': tk.Entry()['foreground'],         # SystemWindowText, Black
-                'entrybg': tk.Entry()['background'],         # SystemWindow, systemWindowBody
-                'entryfont': tk.Entry()['font'],               # TkTextFont
+                'entryfg': ttk.Entry()['foreground'],         # SystemWindowText, Black
+                'entrybg': ttk.Entry()['background'],         # SystemWindow, systemWindowBody
+                'entryfont': ttk.Entry()['font'],               # TkTextFont
                 'frame': tk.Frame()['background'],         # SystemButtonFace, systemWindowBody
                 'menufg': tk.Menu()['foreground'],          # SystemMenuText,
                 'menubg': tk.Menu()['background'],          # SystemMenu,
@@ -291,7 +291,7 @@ class _Theme:
                 # few General Punctuation and Mathematical Operators
                 # LANG: Label for commander name in main window
                 'font': (theme > 1 and not 0x250 < ord(tr.tl('Cmdr')[0]) < 0x3000 and
-                         tk_font.Font(family='Euro Caps', size=10, weight=tk_font.NORMAL) or
+                         tk_font.Font(family='Euro Caps', size=10, weight='normal') or
                          'TkDefaultFont'),
             }
 
@@ -344,12 +344,12 @@ class _Theme:
                 # Hack - highlight widgets like HyperlinkLabel with a non-default cursor
                 if 'fg' not in attribs:
                     widget['foreground'] = self.current['highlight']
-                    if 'insertbackground' in widget.keys():  # tk.Entry
+                    if 'insertbackground' in widget.keys():  # ttk.Entry
                         widget['insertbackground'] = self.current['foreground']
 
                 if 'bg' not in attribs:
                     widget['background'] = self.current['background']
-                    if 'highlightbackground' in widget.keys():  # tk.Entry
+                    if 'highlightbackground' in widget.keys():  # ttk.Entry
                         widget['highlightbackground'] = self.current['background']
 
                 if 'font' not in attribs:
