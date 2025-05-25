@@ -211,34 +211,27 @@ class Updater:
         running version.
         :return: EDMCVersion or None if no newer version found
         """
-        newversion = None
-        items = {}
         try:
-            request = requests.get(get_update_feed(), timeout=10)
-
-        except requests.RequestException as ex:
-            logger.exception(f'Error retrieving update_feed file: {ex}')
-
-            return None
-
-        try:
-            feed = ElementTree.fromstring(request.text)
-
-        except SyntaxError as ex:
-            logger.exception(f'Syntax error in update_feed file: {ex}')
-
+            response = requests.get(get_update_feed(), timeout=10)
+            feed = ElementTree.fromstring(response.text)
+        except (requests.RequestException, ElementTree.ParseError) as ex:
+            logger.exception(f'Error processing update_feed file: {ex}')
             return None
 
         # For *these* purposes all systems are the same as 'windows', as
         # non-win32 would be running from source.
         sparkle_platform = 'windows'
+        items = {}
 
         for item in feed.findall('channel/item'):
-            # xml is a pain with types, hence these ignores
-            ver = item.find('enclosure').attrib.get(  # type: ignore
+            enclosure = item.find('enclosure')
+            if enclosure is None:
+                continue
+
+            ver = enclosure.attrib.get(
                 '{http://www.andymatuschak.org/xml-namespaces/sparkle}version'
             )
-            ver_platform = item.find('enclosure').attrib.get(  # type: ignore
+            ver_platform = enclosure.attrib.get(
                 '{http://www.andymatuschak.org/xml-namespaces/sparkle}os'
             )
             if ver_platform != sparkle_platform:
@@ -249,17 +242,14 @@ class Updater:
 
             items[semver] = EDMCVersion(
                 version=str(ver),  # sv might have mangled version
-                title=item.find('title').text,  # type: ignore
+                title=item.findtext('title', default=''),
                 sv=semver
             )
 
         # Look for any remaining version greater than appversion
-        simple_spec = semantic_version.SimpleSpec(f'>{appversion_nobuild()}')
-        newversion = simple_spec.select(items.keys())
-        if newversion:
-            return items[newversion]
+        newer_versions = semantic_version.SimpleSpec(f'>{appversion_nobuild()}').select(items.keys())
 
-        return None
+        return items.get(newer_versions) if newer_versions else None
 
     def worker(self) -> None:
         """Perform internal update checking & update GUI status if needs be."""
