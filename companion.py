@@ -856,9 +856,7 @@ class Session:
             logger.exception('Frontier CAPI: Misc. Error')
             raise ServerError('Frontier CAPI: Misc. Error')
 
-        def capi_station_queries(  # noqa: CCR001
-            capi_host: str, timeout: int = capi_default_requests_timeout
-        ) -> CAPIData:
+        def capi_station_queries(capi_host: str, timeout: int = capi_default_requests_timeout) -> CAPIData:
             """
             Perform all 'station' queries for the caller.
 
@@ -872,34 +870,31 @@ class Session:
             :return: CAPIData instance with what we retrieved.
             """
             station_data = capi_single_query(capi_host, self.FRONTIER_CAPI_PATH_PROFILE, timeout=timeout)
+            commander = station_data.get('commander')
 
-            if not station_data.get('commander'):
-                # If even this doesn't exist, probably killswitched.
-                return station_data
-
-            if not station_data['commander'].get('docked') and not monitor.state['OnFoot']:
+            if not commander or (not commander.get('docked') and not monitor.state['OnFoot']):
+                # If cmdr doesn't exist, probably killswitched.
                 return station_data
 
             # Sanity checks in case data isn't as we expect, and maybe 'docked' flag
             # is also lagging.
-            if (last_starport := station_data.get('lastStarport')) is None:
+            last_starport = station_data.get('lastStarport')
+            if not last_starport:
                 logger.error("No lastStarport in data!")
                 return station_data
 
-            if (
-                (last_starport_name := last_starport.get('name')) is None
-                or last_starport_name == ''
-            ):
                 # This could well be valid if you've been out exploring for a long
                 # time.
+            last_starport_name = last_starport.get('name', '').rstrip(" +")
+            if not last_starport_name:
                 logger.warning("No lastStarport name!")
                 return station_data
 
             # WORKAROUND: n/a | 06-08-2021: Issue 1198 and https://issues.frontierstore.net/issue-detail/40706
             # -- strip "+" chars off star port names returned by the CAPI
-            last_starport_name = last_starport["name"] = last_starport_name.rstrip(" +")
+            last_starport['name'] = last_starport_name
+            services = last_starport.get('services') or {}
 
-            services = last_starport.get('services', {})
             if not isinstance(services, dict):
                 # Odyssey Alpha Phase 3 4.0.0.20 has been observed having
                 # this be an empty list when you've jumped to another system
@@ -913,34 +908,22 @@ class Session:
                 # Set an empty dict so as to not have to retest below.
                 services = {}
 
-            last_starport_id = int(last_starport.get('id'))
+            last_starport_id = int(last_starport.get('id', 0))
+
+            def verify_and_merge(path, key):
+                data = capi_single_query(capi_host, path, timeout=timeout)
+                if not data.get('id') or last_starport_id != int(data['id']):
+                    # Probably killswitched
+                    logger.warning(f"{last_starport_id!r} != {int(data.get('id', 0))!r}")
+                    raise ServerLagging()
+                data['name'] = last_starport_name
+                last_starport.update(data)
 
             if services.get('commodities'):
-                market_data = capi_single_query(capi_host, self.FRONTIER_CAPI_PATH_MARKET, timeout=timeout)
-                if not market_data.get('id'):
-                    # Probably killswitched
-                    return station_data
-
-                if last_starport_id != int(market_data['id']):
-                    logger.warning(f"{last_starport_id!r} != {int(market_data['id'])!r}")
-                    raise ServerLagging()
-
-                market_data['name'] = last_starport_name
-                station_data['lastStarport'].update(market_data)
+                verify_and_merge(self.FRONTIER_CAPI_PATH_MARKET, 'commodities')
 
             if services.get('outfitting') or services.get('shipyard'):
-                shipyard_data = capi_single_query(capi_host, self.FRONTIER_CAPI_PATH_SHIPYARD, timeout=timeout)
-                if not shipyard_data.get('id'):
-                    # Probably killswitched
-                    return station_data
-
-                if last_starport_id != int(shipyard_data['id']):
-                    logger.warning(f"{last_starport_id!r} != {int(shipyard_data['id'])!r}")
-                    raise ServerLagging()
-
-                shipyard_data['name'] = last_starport_name
-                station_data['lastStarport'].update(shipyard_data)
-            # WORKAROUND END
+                verify_and_merge(self.FRONTIER_CAPI_PATH_SHIPYARD, 'shipyard/outfitting')
 
             return station_data
 
