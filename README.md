@@ -1,7 +1,9 @@
 Any questions or offers of help can be directed to the EDCD Discord #edmc
 channel:
 
-[![Discord chat](https://img.shields.io/discord/164411426939600896.svg?style=social&label=Discord%20chat)](https://discord.gg/usQ5e6n)
+![Static Badge](https://img.shields.io/badge/python-3.10%20%7C%203.11-blue)
+![GitHub Release](https://img.shields.io/github/v/release/edcd/edmarketconnector)
+![GitHub Downloads (all assets, latest release)](https://img.shields.io/github/downloads/EDCD/EDMarketConnector/latest/total) [![Discord chat](https://img.shields.io/discord/164411426939600896.svg?style=social&label=Discord%20chat)](https://discord.gg/usQ5e6n)
 
 Elite: Dangerous Market Connector (EDMC)
 ===
