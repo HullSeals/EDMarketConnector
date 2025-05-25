@@ -116,10 +116,7 @@ class Updater:
 
         :return: bool
         """
-        if self.provider == 'internal':
-            return True
-
-        return False
+        return self.provider == 'internal'
 
     def __init__(self, tkroot: tk.Tk | None = None, provider: str = 'internal'):
         """
@@ -174,30 +171,37 @@ class Updater:
 
         :param onoroff: bool for if we should have the library check or not.
         """
-        if self.use_internal():
-            return
-
-        if sys.platform == 'win32' and self.updater:
+        if not self.use_internal() and sys.platform == 'win32' and self.updater:
             self.updater.win_sparkle_set_automatic_check_for_updates(onoroff)
 
     def check_for_updates(self) -> None:
-        """Trigger the requisite method to check for an update."""
-        if self.use_internal():
-            self.thread = threading.Thread(target=self.worker, name='update worker')
-            self.thread.daemon = True
-            self.thread.start()
+        """Trigger update checking and optional FDEV update logic."""
+        self._check_main_update()
+        self._check_fdev_updates()
 
+    def _check_main_update(self) -> None:
+        """Check for updates using the configured update mechanism."""
+        if self.use_internal():
+            self._start_internal_update_thread()
         elif sys.platform == 'win32' and self.updater:
             self.updater.win_sparkle_check_update_with_ui()
 
+    def _start_internal_update_thread(self) -> None:
+        """Start the thread to check updates internally."""
+        self.thread = threading.Thread(target=self.worker, name='update worker', daemon=True)
+        self.thread.start()
+
+    def _check_fdev_updates(self) -> None:
+        """Optionally update local FDEV data."""
         check_for_fdev_updates()
-        # TEMP: Only include until 6.0
         try:
             check_for_fdev_updates(local=True)
         except Exception as e:
-            logger.info("Tried to update bundle FDEV files but failed. Don't worry, "
-                        "this likely isn't important and can be ignored unless"
-                        f" you run into other issues. If you're curious: {e}")
+            logger.info(
+                "Tried to update bundle FDEV files but failed. "
+                "This likely isn't important and can be ignored unless you run into other issues. "
+                f"Details: {e}"
+            )
 
     def check_appcast(self) -> EDMCVersion | None:
         """
