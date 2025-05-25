@@ -47,31 +47,32 @@ def addcommodities(data) -> None:  # noqa: CCR001
     Assumes that the commodity data has already been 'fixed up'
     :param data: - Fixed up commodity data.
     """
-    if not data['lastStarport'].get('commodities'):
+    commodities_data = data['lastStarport'].get('commodities')
+    if not commodities_data:
         return
 
-    try:
-        commodityfile = config.app_dir_path / 'FDevIDs' / 'commodity.csv'
-    except FileNotFoundError:
+    # Resolve path to commodity.csv
+    commodityfile = (config.app_dir_path / 'FDevIDs' / 'commodity.csv')
+    if not commodityfile.exists():
         commodityfile = pathlib.Path('FDevIDs/commodity.csv')
     commodities = {}
 
     # slurp existing
-    if pathlib.Path.is_file(commodityfile):
-        with open(commodityfile) as csvfile:
+    if commodityfile.is_file():
+        with open(commodityfile, newline='') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
                 commodities[int(row['id'])] = row  # index by int for easier lookup and sorting
 
     size_pre = len(commodities)
 
-    for commodity in data['lastStarport'].get('commodities'):
+    for commodity in commodities_data:
         key = int(commodity['id'])
         new = {
-            'id':        commodity['id'],
-            'symbol':    commodity['name'],
-            'category':  companion_category_map.get(commodity['categoryname']) or commodity['categoryname'],
-            'name':      commodity.get('locName') or 'Limpets',
+            'id':       commodity['id'],
+            'symbol':   commodity['name'],
+            'category': companion_category_map.get(commodity['categoryname'], commodity['categoryname']),
+            'name':     commodity.get('locName', 'Limpets'),
         }
 
         old = commodities.get(key)
@@ -85,7 +86,7 @@ def addcommodities(data) -> None:  # noqa: CCR001
     if len(commodities) <= size_pre:
         return
 
-    if pathlib.Path.is_file(commodityfile):
+    if commodityfile.is_file():
         __make_backup(commodityfile)
 
     with open(commodityfile, 'w', newline='\n') as csvfile:

@@ -90,8 +90,7 @@ class HyperlinkLabel(tk.Label or ttk.Label):  # type: ignore
             return ''
         if not bool(config.get_int("use_alt_shipyard_open")):
             opener = plug.invoke(url, 'EDSY', 'shipyard_url', loadout, monitor.is_beta)
-            if opener:
-                return webbrowser.open(opener)
+            return webbrowser.open(opener) if opener else None
         else:
             # Avoid file length limits if possible
             target = plug.invoke(url, 'EDSY', 'shipyard_url', loadout, monitor.is_beta)
@@ -105,12 +104,12 @@ class HyperlinkLabel(tk.Label or ttk.Label):  # type: ignore
                 ))
 
             webbrowser.open(f'file://localhost/{file_name}')
+            return None
 
     def open_system(self, url: str):
         """Open the Current System in the Selected Provider."""
         opener = plug.invoke(url, 'EDSM', 'system_url', monitor.state['SystemName'])
-        if opener:
-            return webbrowser.open(opener)
+        return webbrowser.open(opener) if opener else None
 
     def open_station(self, url: str):
         """Open the Current Station in the Selected Provider."""
@@ -118,8 +117,7 @@ class HyperlinkLabel(tk.Label or ttk.Label):  # type: ignore
             url, 'EDSM', 'station_url',
             monitor.state['SystemName'], monitor.state['StationName']
         )
-        if opener:
-            return webbrowser.open(opener)
+        return webbrowser.open(opener) if opener else None
 
     def configure(  # noqa: CCR001
         self, cnf: dict[str, Any] | None = None, **kw: Any

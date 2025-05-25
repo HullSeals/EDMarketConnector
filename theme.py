@@ -391,7 +391,7 @@ class _Theme:
 
     # Apply configured theme
 
-    def apply(self, root: tk.Tk) -> None:  # noqa: CCR001, C901
+    def apply(self, root: tk.Tk) -> None:  # noqa: CCR001
         theme = config.get_int('theme')
         self._colors(root, theme)
 
@@ -409,13 +409,9 @@ class _Theme:
                     widget.grid_remove()
 
             if isinstance(pair[0], tk.Menu):
-                if theme == self.THEME_DEFAULT:
-                    root['menu'] = pair[0]
-
-                else:  # Dark *or* Transparent
-                    root['menu'] = ''
+                root['menu'] = pair[0] if theme == self.THEME_DEFAULT else ''  # Dark *or* Transparent
+                if theme != self.THEME_DEFAULT:
                     pair[theme].grid(**gridopts)
-
             else:
                 pair[theme].grid(**gridopts)
 
@@ -424,37 +420,7 @@ class _Theme:
         self.active = theme
 
         if sys.platform == 'win32':
-            import win32con
-
-            # FIXME: Lose the "treat this like a boolean" bullshit
-            if theme == self.THEME_DEFAULT:
-                root.overrideredirect(False)
-
-            else:
-                root.overrideredirect(True)
-
-            if theme == self.THEME_TRANSPARENT:
-                root.attributes("-transparentcolor", 'grey4')
-
-            else:
-                root.attributes("-transparentcolor", '')
-
-            root.withdraw()
-            root.update_idletasks()  # Size and windows styles get recalculated here
-            hwnd = win32gui.GetParent(root.winfo_id())
-            win32gui.SetWindowLong(hwnd, win32con.GWL_STYLE,
-                                   win32gui.GetWindowLong(hwnd, win32con.GWL_STYLE)
-                                   & ~win32con.WS_MAXIMIZEBOX)  # disable maximize
-
-            if theme == self.THEME_TRANSPARENT:
-                win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE,
-                                       win32con.WS_EX_APPWINDOW | win32con.WS_EX_LAYERED)  # Add to taskbar
-
-            else:
-                win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, win32con.WS_EX_APPWINDOW)  # Add to taskbar
-
-            root.deiconify()
-            root.wait_visibility()  # need main window to be displayed before returning
+            self._apply_windows_style(root, theme)
 
         else:
             root.withdraw()
@@ -484,12 +450,25 @@ class _Theme:
                 else:  # Dark *or* Transparent
                     root.overrideredirect(True)
 
-            root.deiconify()
-            root.wait_visibility()  # need main window to be displayed before returning
+        root.deiconify()
+        root.wait_visibility()  # need main window to be displayed before returning
 
         if not self.minwidth:
             self.minwidth = root.winfo_width()  # Minimum width = width on first creation
             root.minsize(self.minwidth, -1)
+
+    def _apply_windows_style(self, root: tk.Tk, theme: int) -> None:
+        import win32con
+        root.overrideredirect(theme != self.THEME_DEFAULT)
+        root.attributes("-transparentcolor", 'grey4' if theme == self.THEME_TRANSPARENT else '')
+        root.withdraw()
+        root.update_idletasks()  # Size and windows styles get recalculated here
+        hwnd = win32gui.GetParent(root.winfo_id())
+        win32gui.SetWindowLong(hwnd, win32con.GWL_STYLE,  # disable maximize
+                               win32gui.GetWindowLong(hwnd, win32con.GWL_STYLE) & ~win32con.WS_MAXIMIZEBOX)
+        win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE,
+                               win32con.WS_EX_APPWINDOW | (
+                                   win32con.WS_EX_LAYERED if theme == self.THEME_TRANSPARENT else 0))
 
 
 # singleton

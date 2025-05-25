@@ -19,7 +19,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from tkinter import ttk
 from typing import Any, Mapping, MutableMapping
-
+from types import ModuleType
 import companion
 import myNotebook as nb  # noqa: N813
 from config import config
@@ -37,6 +37,7 @@ PLUGINS_broken = []
 @dataclass
 class LastError:
     """Holds the last plugin error."""
+
     root: tk.Tk | None = None
     msg: str | None = None
 
@@ -47,7 +48,7 @@ last_error = LastError()
 class Plugin:
     """An EDMC plugin."""
 
-    def __init__(self, name: str, loadfile: Path | None, plugin_logger: logging.Logger | None):  # noqa: CCR001
+    def __init__(self, name: str, loadfile: Path | None, plugin_logger: logging.Logger | None):
         """
         Load a single plugin.
 
@@ -58,36 +59,38 @@ class Plugin:
         """
         self.name: str = name  # Display name.
         self.folder: str | None = name  # basename of plugin folder. None for internal plugins.
-        self.module = None  # None for disabled plugins.
-        self.logger: logging.Logger | None = plugin_logger
+        self.module: ModuleType | None = None  # None for disabled plugins.
+        self.logger = plugin_logger or logging.getLogger(__name__)
 
         if loadfile:
-            logger.info(f'loading plugin "{name.replace(".", "_")}" from "{loadfile}"')
-            try:
-                filename = 'plugin_'
-                filename += name.encode(encoding='ascii', errors='replace').decode('utf-8').replace('.', '_')
-                spec = importlib.util.spec_from_file_location(filename, loadfile)
-                # Replaces older load_module() code. Includes a safety check that the module name is set.
-                if spec is not None and spec.loader is not None:
-                    module = importlib.util.module_from_spec(spec)
-                    sys.modules[module.__name__] = module
-                    spec.loader.exec_module(module)
-                    if getattr(module, 'plugin_start3', None):
-                        newname = module.plugin_start3(Path(loadfile).resolve().parent)
-                        self.name = str(newname) if newname else self.name
-                        self.module = module
-                    elif getattr(module, 'plugin_start', None):
-                        logger.warning(f'plugin {name} needs migrating\n')
-                        PLUGINS_not_py3.append(self)
-                    else:
-                        logger.error(f'plugin {name} has no plugin_start3() function')
-                else:
-                    logger.error(f'Failed to load Plugin "{name}" from file "{loadfile}"')
-            except Exception:
-                logger.exception(f': Failed for Plugin "{name}"')
-                raise
+            self._load_plugin(name, loadfile)
         else:
             logger.info(f'plugin {name} disabled')
+
+    def _load_plugin(self, name: str, loadfile: Path):
+        logger.info(f'Loading plugin "{name.replace(".", "_")}" from "{loadfile}"')
+        try:
+            filename = f'plugin_{name.encode("ascii", errors="replace").decode("utf-8").replace(".", "_")}'
+            spec = importlib.util.spec_from_file_location(filename, loadfile)
+            # Replaces older load_module() code. Includes a safety check that the module name is set.
+            if spec and spec.loader:
+                module = importlib.util.module_from_spec(spec)
+                sys.modules[module.__name__] = module
+                spec.loader.exec_module(module)
+                if hasattr(module, 'plugin_start3'):
+                    newname = module.plugin_start3(loadfile.resolve().parent)
+                    self.name = str(newname) if newname else self.name
+                    self.module = module
+                elif hasattr(module, 'plugin_start'):
+                    logger.warning(f'Plugin {name} needs migrating\n')
+                    PLUGINS_not_py3.append(self)
+                else:
+                    logger.error(f'Plugin {name} has no plugin_start3() function')
+            else:
+                logger.error(f'Failed to load plugin "{name}" from file "{loadfile}"')
+        except Exception as e:
+            logger.exception(f'Failed to load plugin "{name}": {e}')
+            raise
 
     def _get_func(self, funcname: str):
         """
@@ -112,11 +115,7 @@ class Plugin:
                 if appitem is None:
                     return None
                 if isinstance(appitem, tuple):
-                    if (
-                        len(appitem) != 2
-                        or not isinstance(appitem[0], tk.Widget)
-                        or not isinstance(appitem[1], tk.Widget)
-                    ):
+                    if len(appitem) != 2 or not all(isinstance(w, tk.Widget) for w in appitem):
                         raise TypeError("Expected a tuple of two tk.Widget instances from plugin_app")
                 elif not isinstance(appitem, tk.Widget):
                     raise TypeError("Expected a tk.Widget or tuple of two tk.Widgets from plugin_app")
