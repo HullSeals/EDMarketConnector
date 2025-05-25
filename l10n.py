@@ -18,7 +18,7 @@ import sys
 import warnings
 from contextlib import suppress
 from os import listdir, sep
-from typing import Iterable, TextIO, cast
+from typing import Iterable, TextIO
 import pathlib
 from config import config
 from EDMCLogging import get_main_logger
@@ -94,32 +94,32 @@ class Translations:
                 components = preferred.split('-')
                 if preferred in available:
                     lang = preferred
-
-                elif '-'.join(components[0:2]) in available:
-                    lang = '-'.join(components[0:2])  # language-script
-
-                elif components[0] in available:
-                    lang = components[0]  # just base language
-
-                if lang:
+                    break
+                # Try language-script (e.g., zh-Hans)
+                tag2 = '-'.join(components[:2])
+                if tag2 in available:
+                    lang = tag2
+                    break
+                # Try base language (e.g., en)
+                if components[0] in available:
+                    lang = components[0]
                     break
 
-        if lang not in self.available():
+        if lang not in available:
             self.install_dummy()
             return
 
-        self.translations = {None: self.contents(cast(str, lang))}
+        self.translations = {None: self.contents(lang)}
         for plugin in listdir(config.plugin_dir_path):
             plugin_path = config.plugin_dir_path / plugin / LOCALISATION_DIR
-            if pathlib.Path.is_dir(plugin_path):
-                try:
-                    self.translations[plugin] = self.contents(cast(str, lang), plugin_path)
-
-                except UnicodeDecodeError as e:
-                    logger.warning(f'Malformed file {lang}.strings in plugin {plugin}: {e}')
-
-                except Exception:
-                    logger.exception(f'Exception occurred while parsing {lang}.strings in plugin {plugin}')
+            if not plugin_path.is_dir():
+                continue
+            try:
+                self.translations[plugin] = self.contents(lang, plugin_path)
+            except UnicodeDecodeError as e:
+                logger.warning(f'Malformed file {lang}.strings in plugin {plugin}: {e}')
+            except Exception:
+                logger.exception(f'Exception occurred while parsing {lang}.strings in plugin {plugin}')
 
         # DEPRECATED: Migrate to translations.translate or tr.tl. Will remove in 6.0 or later.
         builtins.__dict__['_'] = self.translate
@@ -156,7 +156,7 @@ class Translations:
 
     def translate(self, x: str, context: str | None = None, lang: str | None = None) -> str:  # noqa: CCR001
         """
-        Translate the given string to the current lang or an overriden lang.
+        Translate the given string to the current lang or an overridden lang.
 
         :param x: The string to translate
         :param context: Contains the full path to the file being localised, from which the plugin name is parsed and
