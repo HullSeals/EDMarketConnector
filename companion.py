@@ -554,7 +554,7 @@ class Auth:
         return base64.urlsafe_b64encode(text).decode().replace('=', '')
 
 
-@dataclass
+@dataclass(kw_only=True)
 class EDMCCAPIReturn:
     """Base class for Request, Failure or Response."""
 
@@ -564,47 +564,28 @@ class EDMCCAPIReturn:
     auto_update: bool = False
 
 
+@dataclass
 class EDMCCAPIRequest(EDMCCAPIReturn):
     """Encapsulates a request for CAPI data."""
 
     REQUEST_WORKER_SHUTDOWN = '__EDMC_WORKER_SHUTDOWN'
-
-    def __init__(
-        self, capi_host: str, endpoint: str,
-        query_time: int,
-        tk_response_event: str | None = None,
-        play_sound: bool = False, auto_update: bool = False
-    ):
-        super().__init__(
-            query_time=query_time, tk_response_event=tk_response_event,
-            play_sound=play_sound, auto_update=auto_update
-        )
-        self.capi_host: str = capi_host  # The CAPI host to use.
-        self.endpoint: str = endpoint  # The CAPI query to perform.
+    capi_host: str
+    endpoint: str
 
 
+@dataclass
 class EDMCCAPIResponse(EDMCCAPIReturn):
     """Encapsulates a response from CAPI quer(y|ies)."""
 
-    def __init__(
-            self, capi_data: CAPIData,
-            query_time: int, play_sound: bool = False, auto_update: bool = False
-    ):
-        super().__init__(query_time=query_time, play_sound=play_sound, auto_update=auto_update)
-        self.capi_data: CAPIData = capi_data  # Frontier CAPI response, possibly augmented (station query)
+    capi_data: CAPIData  # Frontier CAPI response, possibly augmented (station query)
 
 
+@dataclass
 class EDMCCAPIFailedRequest(EDMCCAPIReturn):
     """CAPI failed query error class."""
 
-    def __init__(
-            self, message: str,
-            query_time: int, play_sound: bool = False, auto_update: bool = False,
-            exception=None
-    ):
-        super().__init__(query_time=query_time, play_sound=play_sound, auto_update=auto_update)
-        self.message: str = message  # User-friendly reason for failure.
-        self.exception: Exception = exception  # Exception that recipient should raise.
+    message: str  # User-friendly reason for failure.
+    exception: Exception  # Exception that recipient should raise.
 
 
 class Session:
