@@ -12,6 +12,7 @@ import shutil
 import sys
 import threading
 import os
+from dataclasses import dataclass
 from tkinter import messagebox
 from traceback import print_exc
 from typing import TYPE_CHECKING
@@ -59,24 +60,31 @@ def check_for_fdev_updates(silent: bool = False, local: bool = False) -> None:  
             except FileNotFoundError:
                 local_content = None
 
-        try:
-            response = requests.get(url, timeout=20)
-            response.raise_for_status()
-        except requests.RequestException:
-            if not silent:
-                logger.error(f'Failed to download {file}! Unable to continue.')
-            continue
+        remote_file = _download_remote_file(url, file, silent)
 
-        if local_content == response.text:
+        if local_content == remote_file:
             if not silent:
                 logger.info(f'FDEV ID file {file} already up to date.')
-        else:
+        elif local_content != remote_file and isinstance(remote_file, str):
             if not silent:
                 logger.info(f'FDEV ID file {file} not up to date. Downloading...')
             with open(fdevid_file, 'w', newline='', encoding='utf-8') as csvfile:
-                csvfile.write(response.text)
+                csvfile.write(remote_file)
 
 
+def _download_remote_file(url: str, filename: str, silent: bool) -> str | None:
+    """Download the FDEV ID file content from a remote URL."""
+    try:
+        response = requests.get(url, timeout=20)
+        response.raise_for_status()
+        return response.text
+    except requests.RequestException as e:
+        if not silent:
+            logger.error(f"Failed to download {filename}: {e}")
+        return None
+
+
+@dataclass
 class EDMCVersion:
     """
     Hold all the information about an EDMC version.
@@ -91,10 +99,9 @@ class EDMCVersion:
         semantic_version object for this version
     """
 
-    def __init__(self, version: str, title: str, sv: semantic_version.base.Version):
-        self.version: str = version
-        self.title: str = title
-        self.sv: semantic_version.base.Version = sv
+    version: str
+    title: str
+    sv: semantic_version.Version
 
 
 class Updater:

@@ -14,6 +14,7 @@ import operator
 import os
 import sys
 import tkinter as tk
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from tkinter import ttk
@@ -33,14 +34,11 @@ PLUGINS_broken = []
 
 
 # For asynchronous error display
+@dataclass
 class LastError:
     """Holds the last plugin error."""
-
-    msg: str | None
-    root: tk.Tk
-
-    def __init__(self) -> None:
-        self.msg = None
+    root: tk.Tk | None = None
+    msg: str | None = None
 
 
 last_error = LastError()
