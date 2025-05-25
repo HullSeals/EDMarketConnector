@@ -132,45 +132,41 @@ class Updater:
         self.provider: str = provider
         self.thread: threading.Thread | None = None
 
-        if self.use_internal():
-            return
+        if not self.use_internal() and sys.platform == 'win32':
+            self._init_win_sparkle()
 
-        if sys.platform == 'win32':
-            import ctypes
+    def _init_win_sparkle(self):
+        """Initialize WinSparkle updater on Windows."""
+        import ctypes
 
-            try:
-                self.updater: ctypes.CDLL | None = ctypes.cdll.WinSparkle
+        try:
+            self.updater: ctypes.CDLL | None = ctypes.cdll.WinSparkle
 
-                # Set the appcast URL
-                self.updater.win_sparkle_set_appcast_url(get_update_feed().encode())
+            # Set the appcast URL
+            self.updater.win_sparkle_set_appcast_url(get_update_feed().encode())
+            # Set the appversion *without* build metadata, as WinSparkle
+            # doesn't do proper Semantic Version checks.
+            # NB: It 'accidentally' supports pre-release due to how it
+            # splits and compares strings:
+            # <https://github.com/vslavik/winsparkle/issues/214>
+            self.updater.win_sparkle_set_app_build_version(str(appversion_nobuild()))
 
-                # Set the appversion *without* build metadata, as WinSparkle
-                # doesn't do proper Semantic Version checks.
-                # NB: It 'accidentally' supports pre-release due to how it
-                # splits and compares strings:
-                # <https://github.com/vslavik/winsparkle/issues/214>
-                self.updater.win_sparkle_set_app_build_version(str(appversion_nobuild()))
+            # set up shutdown callback
+            self.callback_t = ctypes.CFUNCTYPE(None)
+            self.callback_fn = self.callback_t(self.shutdown_request)
+            self.updater.win_sparkle_set_shutdown_request_callback(self.callback_fn)
 
-                # set up shutdown callback
-                self.callback_t = ctypes.CFUNCTYPE(None)  # keep reference
-                self.callback_fn = self.callback_t(self.shutdown_request)
-                self.updater.win_sparkle_set_shutdown_request_callback(self.callback_fn)
+            # Get WinSparkle running
+            self.updater.win_sparkle_init()
 
-                # Get WinSparkle running
-                self.updater.win_sparkle_init()
-
-            except Exception:
-                print_exc()
-                self.updater = None
-                if not os.getenv("EDMC_NO_UI"):
-                    messagebox.showerror(
-                        title=appname,
-                        message="Updater Failed to Initialize. Please file a bug report!"
-                    )
-                else:
-                    logger.error("Updater Failed to Initialize. Please file a bug report!")
-
-            return
+        except Exception:
+            print_exc()
+            self.updater = None
+            msg = "Updater Failed to Initialize. Please file a bug report!"
+            if not os.getenv("EDMC_NO_UI"):
+                messagebox.showerror(title=appname, message=msg)
+            else:
+                logger.error(msg)
 
     def set_automatic_updates_check(self, onoroff: bool) -> None:
         """
