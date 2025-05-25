@@ -253,16 +253,27 @@ class Updater:
 
     def worker(self) -> None:
         """Perform internal update checking & update GUI status if needs be."""
-        newversion = self.check_appcast()
+        try:
+            newversion = self.check_appcast()
+        except Exception as e:
+            logger.exception(f"Failed to check appcast: {e}")
+            return
 
-        if newversion and self.root:
+        if not newversion:
+            logger.info("No new version available at this time")
+            return
+
+        if not self.root:
+            logger.warning("New version found, but no root GUI to display it.")
+            return
+
+        try:
             status = self.root.nametowidget(f'.{appname.lower()}.status')
             # LANG: Update Available Text
             status['text'] = tr.tl("{NEWVER} is available").format(NEWVER=newversion.title)
             self.root.update_idletasks()
-
-        else:
-            logger.info("No new version available at this time")
+        except Exception as e:
+            logger.exception(f"Failed to update GUI with new version: {e}")
 
     def close(self) -> None:
         """
