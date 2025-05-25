@@ -26,6 +26,7 @@ import time
 import tkinter as tk
 import urllib.parse
 import webbrowser
+from dataclasses import dataclass, field
 from email.utils import parsedate
 from pathlib import Path
 from queue import Queue
@@ -139,13 +140,14 @@ class CAPIDataEncoder(json.JSONEncoder):
         return o.__dict__
 
 
+@dataclass
 class CAPIDataRawEndpoint:
     """Last received CAPI response for a specific endpoint."""
 
-    def __init__(self, raw_data: str, query_time: datetime.datetime):
-        self.query_time = query_time
-        self.raw_data = raw_data
-        # TODO: Maybe requests.response status ?
+    raw_data: str
+    query_time: datetime.datetime
+    status_code: int | None = field(default=None, repr=True)
+    headers: dict | None = field(default=None, repr=False)
 
 
 class CAPIDataRaw:
@@ -216,12 +218,12 @@ def listify(thing: list | dict) -> list:
 class ServerError(Exception):
     """Exception Class for CAPI ServerErrors."""
 
-    def __init__(self, *args) -> None:
-        # Raised when cannot contact the Companion API server
-        self.args = args
+    # Raised when cannot contact the Companion API server
+    def __init__(self, *args: str) -> None:
         if not args:
             # LANG: Frontier CAPI didn't respond
-            self.args = (tr.tl("Error: Frontier CAPI didn't respond"),)
+            args = (tr.tl("Error: Frontier CAPI didn't respond"),)
+        super().__init__(*args)
 
 
 class ServerConnectionError(ServerError):
@@ -236,11 +238,11 @@ class ServerLagging(Exception):
     servers are too busy.
     """
 
-    def __init__(self, *args) -> None:
-        self.args = args
+    def __init__(self, *args: str) -> None:
         if not args:
             # LANG: Frontier CAPI data doesn't agree with latest Journal game location
-            self.args = (tr.tl('Error: Frontier CAPI data out of sync'),)
+            args = (tr.tl('Error: Frontier CAPI data out of sync'),)
+        super().__init__(*args)
 
 
 class NoMonitorStation(Exception):
@@ -253,29 +255,29 @@ class NoMonitorStation(Exception):
     """
 
     def __init__(self, *args) -> None:
-        self.args = args
         if not args:
             # LANG: Commander is docked at an EDO settlement, got out and back in, we forgot the station
-            self.args = (tr.tl("Docked but unknown station: EDO Settlement?"),)
+            args = (tr.tl("Docked but unknown station: EDO Settlement?"),)
+        super().__init__(*args)
 
 
 class CredentialsError(Exception):
     """Exception Class for CAPI Credentials error."""
 
     def __init__(self, *args) -> None:
-        self.args = args
         if not args:
             # LANG: Generic "something went wrong with Frontier Auth" error
-            self.args = (tr.tl('Error: Invalid Credentials'),)
+            args = (tr.tl('Error: Invalid Credentials'),)
+        super().__init__(*args)
 
 
 class CredentialsRequireRefresh(Exception):
     """Exception Class for CAPI credentials requiring refresh."""
 
     def __init__(self, *args) -> None:
-        self.args = args
         if not args:
-            self.args = ('CAPI: Requires refresh of Access Token',)
+            args = ('CAPI: Requires refresh of Access Token',)
+        super().__init__(*args)
 
 
 class CmdrError(Exception):
@@ -288,10 +290,10 @@ class CmdrError(Exception):
     """
 
     def __init__(self, *args) -> None:
-        self.args = args
         if not args:
             # LANG: Frontier CAPI authorisation not for currently game-active commander
-            self.args = (tr.tl('Error: Wrong Cmdr'),)
+            args = (tr.tl('Error: Wrong Cmdr'),)
+        super().__init__(*args)
 
 
 class Auth:
@@ -552,17 +554,14 @@ class Auth:
         return base64.urlsafe_b64encode(text).decode().replace('=', '')
 
 
+@dataclass
 class EDMCCAPIReturn:
     """Base class for Request, Failure or Response."""
 
-    def __init__(
-        self, query_time: int, tk_response_event: str | None = None,
-        play_sound: bool = False, auto_update: bool = False
-    ):
-        self.tk_response_event = tk_response_event  # Name of tk event to generate when response queued.
-        self.query_time: int = query_time  # When this query is considered to have started (time_t).
-        self.play_sound: bool = play_sound  # Whether to play good/bad sounds for success/failure.
-        self.auto_update: bool = auto_update  # Whether this was automatically triggered.
+    query_time: int
+    tk_response_event: str | None = None
+    play_sound: bool = False
+    auto_update: bool = False
 
 
 class EDMCCAPIRequest(EDMCCAPIReturn):
