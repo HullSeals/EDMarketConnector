@@ -749,6 +749,9 @@ class Session:
                 # r.status_code = 401
                 # raise requests.HTTPError
                 if not r.content or not r.content.strip():
+                    if capi_endpoint == "/fleetcarrier" and r.status_code == 204:
+                        logger.info("CAPI returned 204 Fleet Carrier - CMDR doesn't have one?")
+                        raise ServerError("Frontier CAPI returned empty response for Carrier")
                     logger.error(
                         "CAPI returned empty response body\n"
                         "Endpoint: %s\nStatus: %s\nHeaders: %s",
