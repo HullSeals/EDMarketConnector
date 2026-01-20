@@ -170,7 +170,6 @@ class EDDNSender:
         self.session.headers['User-Agent'] = user_agent
 
         self.db_conn = self.sqlite_queue_v1()
-        self.db = self.db_conn.cursor()
 
         self.queue_processing = Lock()
         # Initiate retry/send-now timer
@@ -187,11 +186,20 @@ class EDDNSender:
 
         :return: sqlite3 connection
         """
-        db_conn = sqlite3.connect(config.app_dir_path / self.SQLITE_DB_FILENAME_V1)
-        db = db_conn.cursor()
+        db_path = config.app_dir_path / self.SQLITE_DB_FILENAME_V1
 
-        try:
-            db.execute("""
+        conn = sqlite3.connect(db_path, timeout=30, isolation_level=None, check_same_thread=False)
+        conn.row_factory = sqlite3.Row
+
+        with conn:
+            cur = conn.cursor()
+
+            cur.execute("PRAGMA journal_mode = WAL")
+            cur.execute("PRAGMA synchronous = NORMAL")
+            cur.execute("PRAGMA foreign_keys = ON")
+            cur.execute("PRAGMA busy_timeout = 30000")
+
+            cur.execute("""
                 CREATE TABLE IF NOT EXISTS messages (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     created TEXT NOT NULL,
@@ -203,26 +211,32 @@ class EDDNSender:
                 )
             """)
 
-            db.execute("CREATE INDEX IF NOT EXISTS messages_created ON messages (created)")
-            db.execute("CREATE INDEX IF NOT EXISTS messages_cmdr ON messages (cmdr)")
+            cur.execute("CREATE INDEX IF NOT EXISTS messages_created ON messages (created)")
+            cur.execute("CREATE INDEX IF NOT EXISTS messages_cmdr ON messages (cmdr)")
 
-            logger.info("New 'eddn_queue-v1.db' created")
+        logger.info("EDDN queue database ready: %s", db_path)
+        return conn
 
-        except sqlite3.OperationalError as e:
-            if str(e) != "table messages already exists":
-                # Cleanup, as schema creation failed
-                db.close()
-                db_conn.close()
-                raise e
+    def _db_execute(self, sql: str, params: tuple | dict = ()) -> sqlite3.Cursor:
+        """Execute a write statement inside a transaction."""
+        try:
+            with self.db_conn:
+                return self.db_conn.execute(sql, params)
+        except Exception:
+            logger.exception("DB execute failed: %s", sql)
+            raise
 
-        return db_conn
+    def _db_query_one(self, sql: str, params: tuple | dict = ()) -> sqlite3.Row | None:
+        """Execute a query and return one row (or None)."""
+        try:
+            cur = self.db_conn.execute(sql, params)
+            return cur.fetchone()
+        except Exception:
+            logger.exception("DB query failed: %s", sql)
+            raise
 
     def close(self) -> None:
         """Clean up any resources."""
-        logger.debug('Closing db cursor.')
-        if self.db:
-            self.db.close()
-
         logger.debug('Closing db connection.')
         if self.db_conn:
             self.db_conn.close()
@@ -245,14 +259,14 @@ class EDDNSender:
         :param msg: The full, transmission-ready, EDDN message.
         :return: ID of the successfully inserted row.
         """
-        logger.trace_if("plugin.eddn.send", f"Message for {msg['$schemaRef']=}")
+        logger.trace_if("plugin.eddn.send", f"Message for {msg.get('$schemaRef')=}")
+
         # Cater for legacy replay.json messages
         if 'header' not in msg:
             msg['header'] = {
                 # We have to lie and say it's *this* version, but denote that
                 # it might not actually be this version.
-                'softwareName': f'{applongname} [{system()}]'
-                                ' (legacy replay)',
+                'softwareName': f'{applongname} [{system()}] (legacy replay)',
                 'softwareVersion': str(appversion_nobuild()),
                 'uploaderID': cmdr,
                 'gameversion': '',  # Can't add what we don't know
@@ -266,26 +280,24 @@ class EDDNSender:
         uploader = msg['header']['uploaderID']
 
         try:
-            self.db.execute(
+            cur = self._db_execute(
                 """
                 INSERT INTO messages (
                     created, cmdr, edmc_version, game_version, game_build, message
                 )
-                VALUES (
-                    ?, ?, ?, ?, ?, ?
-                )
+                VALUES (?, ?, ?, ?, ?, ?)
                 """,
-                (created, uploader, edmc_version, game_version, game_build, json.dumps(msg))
+                (created, uploader, edmc_version, game_version, game_build, json.dumps(msg)),
             )
-            self.db_conn.commit()
+            rowid = cur.lastrowid
 
         except Exception:
             logger.exception('INSERT error')
             # Can't possibly be a valid row id
             return -1
 
-        logger.trace_if("plugin.eddn.send", f"Message for {msg['$schemaRef']=} recorded, id={self.db.lastrowid}")
-        return self.db.lastrowid or -1
+        logger.trace_if("plugin.eddn.send", f"Message recorded, id={rowid}")
+        return rowid or -1
 
     def delete_message(self, row_id: int) -> None:
         """
@@ -294,13 +306,10 @@ class EDDNSender:
         :param row_id: id of message to be deleted.
         """
         logger.trace_if("plugin.eddn.send", f"Deleting message with {row_id=}")
-        self.db.execute(
-            """
-            DELETE FROM messages WHERE id = :row_id
-            """,
-            {'row_id': row_id}
+        self._db_execute(
+            "DELETE FROM messages WHERE id = ?",
+            (row_id,),
         )
-        self.db_conn.commit()
 
     def send_message_by_id(self, id: int):
         """
@@ -310,13 +319,14 @@ class EDDNSender:
         :return:
         """
         logger.trace_if("plugin.eddn.send", f"Sending message with {id=}")
-        self.db.execute(
-            """
-            SELECT * FROM messages WHERE id = :row_id
-            """,
-            {'row_id': id}
+
+        row = self._db_query_one(
+            "SELECT * FROM messages WHERE id = ?",
+            (id,),
         )
-        row = dict(zip([c[0] for c in self.db.description], self.db.fetchone()))
+
+        if not row:
+            return False
 
         try:
             if self.send_message(row['message']):
@@ -433,70 +443,51 @@ class EDDNSender:
                 self.eddn.parent.after(
                     self.eddn.REPLAY_PERIOD, self.queue_check_and_send, reschedule
                 )
-
             else:
                 logger.trace_if(
                     "plugin.eddn.send",
                     "NO next run scheduled (there should be another one already set)",
                 )
-
             return
+
         logger.trace_if("plugin.eddn.send", "Obtained mutex")
-        # Used to indicate if we've rescheduled at the faster rate already.
-        have_rescheduled = False
-        # We send either if docked or 'Delay sending until docked' not set
-        if this.docked or not config.get_int('output') & config.OUT_EDDN_DELAY:
-            logger.trace_if("plugin.eddn.send", "Should send")
-            # We need our own cursor here, in case the semantics of
-            # tk `after()` could allow this to run in the middle of other
-            # database usage.
-            db_cursor = self.db_conn.cursor()
 
-            # Options:
-            #  1. Process every queued message, regardless.
-            #  2. Bail if we get any sort of connection error from EDDN.
+        try:
+            have_rescheduled = False
 
-            # Every queued message that is for *this* commander.  We do **NOT**
-            # check if it's station/not-station, as the control of if a message
-            # was even created, versus the Settings > EDDN options, is applied
-            # *then*, not at time of sending.
-            try:
-                db_cursor.execute(
-                    """
-                    SELECT id FROM messages
-                    ORDER BY created
-                    LIMIT 1
-                    """
-                )
+            # We send either if docked or 'Delay sending until docked' not set
+            if this.docked or not config.get_int('output') & config.OUT_EDDN_DELAY:
+                logger.trace_if("plugin.eddn.send", "Should send")
 
-            except Exception:
-                logger.exception("DB error querying queued messages")
+                try:
+                    row = self._db_query_one(
+                        "SELECT id FROM messages ORDER BY created LIMIT 1"
+                    )
+                except Exception:
+                    logger.exception("DB error querying queued messages")
+                    row = None
 
-            else:
-                row = db_cursor.fetchone()
                 if row:
-                    row = dict(zip([c[0] for c in db_cursor.description], row))
-                    if self.send_message_by_id(row['id']):
-                        # If `True` was returned then we're done with this message.
-                        #  `False` means "failed to send, but not because the message
-                        #   is bad", i.e. an EDDN Gateway problem.  Thus, in that case
-                        #   we do *NOT* schedule attempting the next message.
+                    msg_id = row["id"]
+
+                    if self.send_message_by_id(msg_id):
+                        # If True was returned then we're done with this message.
                         # Always re-schedule as this is only a "Don't hammer EDDN" delay
-                        logger.trace_if("plugin.eddn.send", f"Next run scheduled for {self.eddn.REPLAY_DELAY}ms from "
-                                                            "now")
+                        logger.trace_if("plugin.eddn.send",
+                                        f"Next run scheduled for {self.eddn.REPLAY_DELAY}ms from now",)
                         self.eddn.parent.after(self.eddn.REPLAY_DELAY, self.queue_check_and_send, reschedule)
                         have_rescheduled = True
+            else:
+                logger.trace_if("plugin.eddn.send", "Should NOT send")
 
-                db_cursor.close()
+        finally:
+            self.queue_processing.release()
+            logger.trace_if("plugin.eddn.send", "Mutex released")
 
-        else:
-            logger.trace_if("plugin.eddn.send", "Should NOT send")
-
-        self.queue_processing.release()
-        logger.trace_if("plugin.eddn.send", "Mutex released")
         if reschedule and not have_rescheduled:
             # Set us up to run again per the configured period
-            logger.trace_if("plugin.eddn.send", f"Next run scheduled for {self.eddn.REPLAY_PERIOD}ms from now")
+            logger.trace_if("plugin.eddn.send",
+                            f"Next run scheduled for {self.eddn.REPLAY_PERIOD}ms from now",)
             self.eddn.parent.after(self.eddn.REPLAY_PERIOD, self.queue_check_and_send, reschedule)
 
     def _log_response(
