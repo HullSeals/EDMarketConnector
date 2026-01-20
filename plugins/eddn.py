@@ -2063,43 +2063,29 @@ def tracking_ui_update() -> None:
     if not config.eddn_tracking_ui:
         return
 
-    this.ui_system_name['text'] = '≪None≫'
-    if this.ui_system_name is not None:
-        this.ui_system_name['text'] = this.system_name
+    def set_label(widget, value) -> None:
+        if widget is None:
+            return
+        try:
+            widget['text'] = str(value) if value is not None else '≪None≫'
+        except Exception:
+            # Widget might have been destroyed or is invalid
+            logger.debug("Failed to update tracking UI widget", exc_info=True)
 
-    this.ui_system_address['text'] = '≪None≫'
-    if this.ui_system_address is not None:
-        this.ui_system_address['text'] = this.system_address
+    set_label(this.ui_system_name, this.system_name)
+    set_label(this.ui_system_address, this.system_address)
+    set_label(this.ui_j_body_name, this.body_name)
+    set_label(this.ui_j_body_id, this.body_id)
+    set_label(this.ui_j_body_type, this.body_type)
+    set_label(this.ui_s_body_name, this.status_body_name)
+    set_label(this.ui_station_name, this.station_name)
+    set_label(this.ui_station_type, this.station_type)
+    set_label(this.ui_station_marketid, this.station_marketid)
 
-    this.ui_j_body_name['text'] = '≪None≫'
-    if this.body_name is not None:
-        this.ui_j_body_name['text'] = this.body_name
-
-    this.ui_j_body_id['text'] = '≪None≫'
-    if this.body_id is not None:
-        this.ui_j_body_id['text'] = str(this.body_id)
-
-    this.ui_j_body_type['text'] = '≪None≫'
-    if this.body_type is not None:
-        this.ui_j_body_type['text'] = str(this.body_type)
-
-    this.ui_s_body_name['text'] = '≪None≫'
-    if this.status_body_name is not None:
-        this.ui_s_body_name['text'] = this.status_body_name
-
-    this.ui_station_name['text'] = '≪None≫'
-    if this.station_name is not None:
-        this.ui_station_name['text'] = this.station_name
-
-    this.ui_station_type['text'] = '≪None≫'
-    if this.station_type is not None:
-        this.ui_station_type['text'] = this.station_type
-
-    this.ui_station_marketid['text'] = '≪None≫'
-    if this.station_marketid is not None:
-        this.ui_station_marketid['text'] = this.station_marketid
-
-    this.ui.update_idletasks()
+    try:
+        this.ui.update_idletasks()
+    except Exception:
+        logger.debug("Failed to update_idletasks() on tracking UI", exc_info=True)
 
 
 def plugin_prefs(parent, cmdr: str, is_beta: bool) -> Frame:
@@ -2112,14 +2098,17 @@ def plugin_prefs(parent, cmdr: str, is_beta: bool) -> Frame:
     :return: The tkinter frame we created.
     """
     if prefsVersion.shouldSetDefaults('0.0.0.0', not bool(config.get_int('output'))):
-        output: int = config.OUT_EDDN_SEND_STATION_DATA | config.OUT_EDDN_SEND_NON_STATION  # default settings
-
+        output: int = (
+            config.OUT_EDDN_SEND_STATION_DATA |
+            config.OUT_EDDN_SEND_NON_STATION
+        )
     else:
         output = config.get_int('output')
 
     eddnframe = nb.Frame(parent)
 
     cur_row = 0
+
     HyperlinkLabel(
         eddnframe,
         text='Elite Dangerous Data Network',
@@ -2129,38 +2118,43 @@ def plugin_prefs(parent, cmdr: str, is_beta: bool) -> Frame:
     ).grid(row=cur_row, padx=PADX, pady=PADY, sticky=tk.W)  # Don't translate
     cur_row += 1
 
-    this.eddn_station = tk.IntVar(value=(output & config.OUT_EDDN_SEND_STATION_DATA) and 1)
-    this.eddn_station_button = nb.Checkbutton(
-        eddnframe,
+    def add_checkbox(text: str, var: tk.IntVar, command=None) -> nb.Checkbutton:
+        btn = nb.Checkbutton(
+            eddnframe,
+            text=text,
+            variable=var,
+            command=command,
+        )
+        btn.grid(row=cur_row, padx=BUTTONX, pady=PADY, sticky=tk.W)
+        return btn
+
+    # Send station data
+    this.eddn_station = tk.IntVar(value=1 if (output & config.OUT_EDDN_SEND_STATION_DATA) else 0)
+    this.eddn_station_button = add_checkbox(
         # LANG: Enable EDDN support for station data checkbox label
-        text=tr.tl('Send station data to the Elite Dangerous Data Network'),
-        variable=this.eddn_station,
-        command=prefsvarchanged
-    )  # Output setting
-    this.eddn_station_button.grid(row=cur_row, padx=BUTTONX, pady=PADY, sticky=tk.W)
+        tr.tl('Send station data to the Elite Dangerous Data Network'),
+        this.eddn_station,
+        prefsvarchanged,
+    )
     cur_row += 1
 
-    this.eddn_system = tk.IntVar(value=(output & config.OUT_EDDN_SEND_NON_STATION) and 1)
-    # Output setting new in E:D 2.2
-    this.eddn_system_button = nb.Checkbutton(
-        eddnframe,
+    # Send system / scan data
+    this.eddn_system = tk.IntVar(value=1 if (output & config.OUT_EDDN_SEND_NON_STATION) else 0)
+    this.eddn_system_button = add_checkbox(
         # LANG: Enable EDDN support for system and other scan data checkbox label
-        text=tr.tl('Send system and scan data to the Elite Dangerous Data Network'),
-        variable=this.eddn_system,
-        command=prefsvarchanged
+        tr.tl('Send system and scan data to the Elite Dangerous Data Network'),
+        this.eddn_system,
+        prefsvarchanged,
     )
-    this.eddn_system_button.grid(row=cur_row, padx=BUTTONX, pady=PADY, sticky=tk.W)
     cur_row += 1
 
-    this.eddn_delay = tk.IntVar(value=(output & config.OUT_EDDN_DELAY) and 1)
-    # Output setting under 'Send system and scan data to the Elite Dangerous Data Network' new in E:D 2.2
-    this.eddn_delay_button = nb.Checkbutton(
-        eddnframe,
+    # Delay sending until docked
+    this.eddn_delay = tk.IntVar(value=1 if (output & config.OUT_EDDN_DELAY) else 0)
+    this.eddn_delay_button = add_checkbox(
         # LANG: EDDN delay sending until docked option is on, this message notes that a send was skipped due to this
-        text=tr.tl('Delay sending until docked'),
-        variable=this.eddn_delay
+        tr.tl('Delay sending until docked'),
+        this.eddn_delay,
     )
-    this.eddn_delay_button.grid(row=cur_row, padx=BUTTONX, pady=PADY, sticky=tk.W)
 
     return eddnframe
 
